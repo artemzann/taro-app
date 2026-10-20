@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Таро · Карта дня</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;700&family=Inter:wght@400;500;600&family=Noto+Sans+Symbols:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f0b1e; --bg2:#1a1333; --card:#231a42; --gold:#d9b56c; --gold2:#f3dca4;
+    --text:#ece6f7; --muted:#a79fbf; --line:rgba(217,181,108,.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100%}
+  body{min-height:100vh;background:radial-gradient(ellipse at top,#2a1d52 0%,var(--bg) 60%) fixed;padding:20px 16px 40px}
+  .stars{position:fixed;inset:0;pointer-events:none;background-image:
+    radial-gradient(1px 1px at 20% 30%,#fff8 50%,transparent),radial-gradient(1px 1px at 70% 15%,#fff6 50%,transparent),
+    radial-gradient(1.5px 1.5px at 85% 60%,#fff5 50%,transparent),radial-gradient(1px 1px at 35% 80%,#fff6 50%,transparent),
+    radial-gradient(1px 1px at 55% 45%,#fff4 50%,transparent),radial-gradient(1.5px 1.5px at 10% 65%,#fff5 50%,transparent)}
+  .wrap{position:relative;max-width:480px;margin:0 auto}
+  h1{font-family:'Cormorant Garamond',serif;font-size:30px;text-align:center;color:var(--gold2);letter-spacing:.5px}
+  .sub{text-align:center;color:var(--muted);font-size:14px;margin-top:4px}
+  .screen{display:none;animation:fade .4s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .menu{display:grid;gap:12px;margin-top:24px}
+  .item{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:16px;
+    background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%}
+  .item:active{transform:scale(.98)}
+  .item .ic{font-family:'Noto Sans Symbols',serif;font-size:26px;color:var(--gold);width:40px;text-align:center}
+  .item b{display:block;font-size:16px;font-weight:600}
+  .item span{font-size:13px;color:var(--muted)}
+  .item .tag{margin-left:auto;font-size:12px;padding:4px 10px;border-radius:20px;white-space:nowrap}
+  .free{background:rgba(120,220,160,.15);color:#8fe0b0}
+  .paid{background:rgba(217,181,108,.15);color:var(--gold2)}
+
+  .hero{display:flex;justify-content:center;margin-top:24px}
+  .cards{display:flex;justify-content:center;gap:10px;margin:24px 0 8px;flex-wrap:wrap}
+  .card{width:110px;height:180px;perspective:800px;cursor:pointer}
+  .card.big{width:160px;height:262px}
+  .inner{position:relative;width:100%;height:100%;transition:transform .8s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d}
+  .card.flipped .inner{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1.5px solid var(--gold);overflow:hidden}
+  .back{background:
+      radial-gradient(circle at 50% 50%,transparent 28%,rgba(217,181,108,.18) 29%,transparent 31%),
+      repeating-linear-gradient(45deg,rgba(217,181,108,.08) 0 6px,transparent 6px 12px),
+      linear-gradient(160deg,#2b1f55,#140e2b);display:flex;align-items:center;justify-content:center}
+  .back::after{content:'✦';color:var(--gold);font-size:28px}
+  .front{transform:rotateY(180deg);background:linear-gradient(170deg,#2e2259,#170f30);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px 6px}
+  .front .num{font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px}
+  .front .sym{font-family:'Noto Sans Symbols',serif;font-size:44px;color:var(--gold2);text-shadow:0 0 18px rgba(243,220,164,.5)}
+  .card.big .front .sym{font-size:68px}
+  .front .nm{font-family:'Cormorant Garamond',serif;font-size:15px;text-align:center;line-height:1.1;color:var(--text)}
+  .card.big .front .nm{font-size:20px}
+  .front.rev .sym{transform:rotate(180deg)}
+  .pos{text-align:center;font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:1px}
+  .hint{text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+
+  .reading{margin-top:16px;display:grid;gap:12px}
+  .block{border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.03);animation:fade .5s ease}
+  .block h3{font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--gold2)}
+  .block .k{font-size:12px;color:var(--gold);margin:2px 0 8px;text-transform:uppercase;letter-spacing:.8px}
+  .block p{font-size:14.5px;line-height:1.55;color:var(--text)}
+  .block .adv{margin-top:8px;color:var(--muted);font-style:italic}
+  .answer{text-align:center;font-family:'Cormorant Garamond',serif;font-size:40px;color:var(--gold2);margin-top:8px}
+
+  .btn{display:block;width:100%;padding:14px;border-radius:14px;border:0;font:600 15px Inter,sans-serif;cursor:pointer;margin-top:14px}
+  .btn.gold{background:linear-gradient(135deg,#e8c77d,#b98f3e);color:#1a1230}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .note{text-align:center;font-size:11.5px;color:#7d7597;margin-top:28px;line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2b2150;border:1px solid var(--line);color:var(--text);
+    padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90%;text-align:center}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="wrap">
+
+  <!-- Главный экран -->
+  <section class="screen active" id="home">
+    <h1>Таро</h1>
+    <p class="sub" id="hello">Что карты скажут сегодня?</p>
+    <div class="menu">
+      <button class="item" onclick="openDaily()">
+        <div class="ic">☉&#xFE0E;</div>
+        <div><b>Карта дня</b><span>Одна карта, совет на сегодня</span></div>
+        <div class="tag free">бесплатно</div>
+      </button>
+      <button class="item" onclick="buy('three')">
+        <div class="ic">✧</div>
+        <div><b>Прошлое · Настоящее · Будущее</b><span>Расклад на три карты</span></div>
+        <div class="tag paid">⭐ <span id="p-three"></span></div>
+      </button>
+      <button class="item" onclick="buy('yesno')">
+        <div class="ic">☽&#xFE0E;</div>
+        <div><b>Да или нет</b><span>Короткий ответ на ваш вопрос</span></div>
+        <div class="tag paid">⭐ <span id="p-yesno"></span></div>
+      </button>
+    </div>
+    <p class="note">Расклады носят развлекательный характер и не заменяют советов специалистов.</p>
+  </section>
+
+  <!-- Экран расклада -->
+  <section class="screen" id="spread">
+    <h1 id="sp-title"></h1>
+    <p class="sub" id="sp-sub"></p>
+    <div class="cards" id="sp-cards"></div>
+    <p class="hint" id="sp-hint">Нажмите на карту, чтобы открыть</p>
+    <div class="reading" id="sp-reading"></div>
+    <button class="btn ghost" onclick="go('home')">На главную</button>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= НАСТРОЙКИ ================= */
+// Цены в Telegram Stars (только для надписей на кнопках; настоящая цена задаётся в api/invoice.js)
+const PRICES = { three: 25, yesno: 10 };
+
+/* ================= КАРТЫ (Старшие арканы) ================= */
+const DECK = [
+ {n:'0',  name:'Шут', s:'✧', k:'начало · свобода · риск', yn:'Да',
+  up:'Новый этап, к которому вы подходите с открытым сердцем. Время довериться интуиции и сделать первый шаг, даже если не видно всей дороги.',
+  dn:'Поспешность и безрассудство. Прежде чем прыгать, посмотрите, куда приземлитесь.',
+  adv:'Начните, но возьмите с собой здравый смысл.'},
+ {n:'I',  name:'Маг', s:'☿', k:'воля · мастерство · действие', yn:'Да',
+  up:'У вас есть всё нужное, чтобы воплотить задуманное. Сейчас решают ваши действия и умение собрать ресурсы в одной точке.',
+  dn:'Распыление сил или попытка казаться, а не быть. Проверьте, не обманываете ли вы себя или вас.',
+  adv:'Не ждите идеального момента: используйте то, что уже в руках.'},
+ {n:'II', name:'Верховная Жрица', s:'☽', k:'интуиция · тайна · знание', yn:'Возможно',
+  up:'Ответ уже есть внутри вас. Не всё стоит говорить вслух: прислушайтесь к снам, предчувствиям и тишине.',
+  dn:'Вы игнорируете внутренний голос, или от вас что-то скрывают.',
+  adv:'Возьмите паузу перед решением и понаблюдайте.'},
+ {n:'III',name:'Императрица', s:'♀', k:'изобилие · забота · рост', yn:'Да',
+  up:'Период плодородия во всём: в отношениях, деньгах, творчестве. То, что вы вырастили, начинает приносить плоды.',
+  dn:'Застой или чрезмерная опека. Заботясь о других, вы забыли о себе.',
+  adv:'Позвольте себе удовольствие и отдых: это тоже вклад в результат.'},
+ {n:'IV', name:'Император', s:'♈', k:'порядок · власть · структура', yn:'Да',
+  up:'Время навести порядок, выстроить правила и взять ответственность. Опора сейчас в дисциплине и чётком плане.',
+  dn:'Жёсткость, контроль или давление со стороны авторитета.',
+  adv:'Действуйте по плану, но оставьте место для гибкости.'},
+ {n:'V',  name:'Иерофант', s:'♉', k:'традиция · наставник · правила', yn:'Возможно',
+  up:'Помогут проверенные пути, опыт старших и мудрый совет. Хорошее время для обучения.',
+  dn:'Чужие правила стали тесны. Возможно, пора искать собственный путь.',
+  adv:'Спросите совета у того, кто уже прошёл этот путь.'},
+ {n:'VI', name:'Влюблённые', s:'♊', k:'выбор · союз · гармония', yn:'Да',
+  up:'Важный выбор, сделанный сердцем. Карта союзов, взаимной симпатии и совпадающих ценностей.',
+  dn:'Разлад, сомнения в выборе или ценности, которые расходятся.',
+  adv:'Выбирайте то, что согласуется с вашими ценностями, а не с чужими ожиданиями.'},
+ {n:'VII',name:'Колесница', s:'♋', k:'движение · победа · воля', yn:'Да',
+  up:'Решительное движение вперёд. Вы удержите курс, если не позволите эмоциям тянуть в разные стороны.',
+  dn:'Потеря контроля, буксование на месте.',
+  adv:'Определите одну цель и направьте на неё все силы.'},
+ {n:'VIII',name:'Сила', s:'♌', k:'смелость · терпение · мягкость', yn:'Да',
+  up:'Настоящая сила в спокойствии и терпении. Вы справитесь с ситуацией без давления, мягко и уверенно.',
+  dn:'Неуверенность в себе или вспышки гнева.',
+  adv:'Мягкость сейчас действует лучше напора.'},
+ {n:'IX', name:'Отшельник', s:'♍', k:'уединение · поиск · мудрость', yn:'Возможно',
+  up:'Время побыть с собой и разобраться, чего вы действительно хотите. Ответы приходят в тишине.',
+  dn:'Изоляция затянулась, одиночество перестало помогать.',
+  adv:'Отключитесь от шума хотя бы на один вечер.'},
+ {n:'X',  name:'Колесо Фортуны', s:'♃', k:'перемены · удача · циклы', yn:'Да',
+  up:'Колесо повернулось, начинается новый виток. Перемены несут шанс, главное его заметить.',
+  dn:'Полоса невезения, которая скоро закончится. Отпустите то, что от вас не зависит.',
+  adv:'Будьте готовы поймать удачный момент.'},
+ {n:'XI', name:'Справедливость', s:'♎', k:'честность · баланс · последствия', yn:'Возможно',
+  up:'Всё возвращается по заслугам. Решения стоит принимать честно и взвешенно, особенно в денежных и юридических вопросах.',
+  dn:'Несправедливость или попытка уйти от ответственности.',
+  adv:'Взвесьте все аргументы, прежде чем выносить вердикт.'},
+ {n:'XII',name:'Повешенный', s:'♆', k:'пауза · другой взгляд · жертва', yn:'Нет',
+  up:'Ситуация зависла, но это не потерянное время. Посмотрите на неё под другим углом: решение найдётся там.',
+  dn:'Бессмысленное ожидание и жертвы, которые никто не оценит.',
+  adv:'Перестаньте тянуть: либо отпустите, либо действуйте.'},
+ {n:'XIII',name:'Смерть', s:'♏', k:'завершение · трансформация · обновление', yn:'Нет',
+  up:'Это не буквальная смерть, а конец этапа. Старое уходит, чтобы освободить место новому.',
+  dn:'Сопротивление переменам, попытка удержать прошлое.',
+  adv:'Позвольте закончиться тому, что уже закончилось.'},
+ {n:'XIV',name:'Умеренность', s:'♐', k:'баланс · терпение · исцеление', yn:'Да',
+  up:'Золотая середина. Всё постепенно приходит в равновесие, если не торопить события.',
+  dn:'Крайности, излишества, нетерпение.',
+  adv:'Ищите баланс между «хочу» и «надо».'},
+ {n:'XV', name:'Дьявол', s:'♑', k:'соблазн · привязанность · страх', yn:'Нет',
+  up:'Что-то держит вас сильнее, чем кажется: привычка, страх, отношения или деньги. Осознать это значит сделать первый шаг к свободе.',
+  dn:'Освобождение от того, что тянуло вниз.',
+  adv:'Честно спросите себя, что сейчас вами управляет.'},
+ {n:'XVI',name:'Башня', s:'♂', k:'потрясение · крушение · озарение', yn:'Нет',
+  up:'Внезапные перемены рушат то, что стояло на слабом фундаменте. Неприятно, но это расчищает дорогу.',
+  dn:'Кризис, который удаётся смягчить, или страх перемен.',
+  adv:'Не держитесь за то, что уже трещит.'},
+ {n:'XVII',name:'Звезда', s:'♒', k:'надежда · вдохновение · вера', yn:'Да',
+  up:'Одна из самых светлых карт колоды. Надежда и вера в лучшее сейчас оправданы.',
+  dn:'Разочарование и потеря веры. Свет никуда не делся, он лишь временно скрыт.',
+  adv:'Загадайте желание и сделайте к нему один шаг.'},
+ {n:'XVIII',name:'Луна', s:'♓', k:'иллюзии · страхи · неясность', yn:'Нет',
+  up:'Не всё таково, каким кажется. Страхи и фантазии искажают картину, поэтому не спешите с выводами.',
+  dn:'Туман рассеивается, правда выходит наружу.',
+  adv:'Проверьте факты, прежде чем верить.'},
+ {n:'XIX',name:'Солнце', s:'☉', k:'радость · успех · ясность', yn:'Да',
+  up:'Успех, тепло и ясность. Всё складывается, и можно позволить себе радоваться.',
+  dn:'Радость немного откладывается, но никуда не денется.',
+  adv:'Делитесь своим светом: он вернётся.'},
+ {n:'XX', name:'Суд', s:'♇', k:'пробуждение · итог · призвание', yn:'Да',
+  up:'Время подвести итоги и услышать своё призвание. Прошлое получает новый смысл.',
+  dn:'Самокритика и страх сделать следующий шаг.',
+  adv:'Простите себя и двигайтесь дальше.'},
+ {n:'XXI',name:'Мир', s:'♄', k:'завершение · целостность · награда', yn:'Да',
+  up:'Цикл успешно завершён. Вы на своём месте, впереди новый уровень.',
+  dn:'Незавершённые дела не дают двигаться дальше.',
+  adv:'Закончите начатое и отпразднуйте.'}
+];
+
+/* ================= TELEGRAM ================= */
+const tg = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined ? window.Telegram.WebApp : null;
+const inTelegram = !!(tg && tg.initData);
+if (tg) {
+  try { tg.ready(); tg.expand(); tg.setHeaderColor('#0f0b1e'); tg.setBackgroundColor('#0f0b1e'); } catch(e){}
+  try { tg.BackButton.onClick(() => go('home')); } catch(e){}
+}
+const user = inTelegram && tg.initDataUnsafe && tg.initDataUnsafe.user;
+if (user && user.first_name) document.getElementById('hello').textContent = user.first_name + ', что карты скажут сегодня?';
+
+function haptic(type){ try{ tg && tg.HapticFeedback.impactOccurred(type||'light'); }catch(e){} }
+function sym(c){ return c.s + '\uFE0E'; } // \uFE0E — чтобы iPhone не превращал символы в эмодзи
+
+/* ================= УТИЛИТЫ ================= */
+function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function userKey(){
+  if (user && user.id) return 'u' + user.id;
+  let id; try{ id = localStorage.getItem('tarot_guest'); if(!id){ id='g'+Math.random().toString(36).slice(2); localStorage.setItem('tarot_guest', id);} }catch(e){ id='guest'; }
+  return id;
+}
+function today(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function drawRandom(count){
+  const idx=[...DECK.keys()];
+  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  return idx.slice(0,count).map(i=>({c:DECK[i], rev:Math.random()<0.3}));
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===id));
+  window.scrollTo(0,0);
+  try{ id==='home' ? tg.BackButton.hide() : tg.BackButton.show(); }catch(e){}
+}
+
+/* ================= ОТРИСОВКА ================= */
+function cardHTML(item, big){
+  return `<div class="card ${big?'big':''}"><div class="inner">
+    <div class="face back"></div>
+    <div class="face front ${item.rev?'rev':''}">
+      <div class="num">${item.c.n}</div><div class="sym">${sym(item.c)}</div><div class="nm">${item.c.name}</div>
+    </div></div></div>`;
+}
+
+function showSpread({title, sub, items, positions, big, onAllOpen}){
+  document.getElementById('sp-title').textContent = title;
+  document.getElementById('sp-sub').textContent = sub;
+  const box = document.getElementById('sp-cards'), reading = document.getElementById('sp-reading');
+  reading.innerHTML=''; document.getElementById('sp-hint').style.display='block';
+  box.innerHTML = items.map((it,i)=>`<div>${cardHTML(it,big)}${positions?`<div class="pos">${positions[i]}</div>`:''}</div>`).join('');
+  let opened=0;
+  box.querySelectorAll('.card').forEach((el,i)=>{
+    el.addEventListener('click',()=>{
+      if(el.classList.contains('flipped')) return;
+      el.classList.add('flipped'); haptic('medium'); opened++;
+      const it=items[i], c=it.c;
+      const div=document.createElement('div'); div.className='block';
+      div.innerHTML=`<h3>${positions?positions[i]+': ':''}${c.name}${it.rev?' (перевёрнутая)':''}</h3>
+        <div class="k">${c.k}</div><p>${it.rev?c.dn:c.up}</p><p class="adv">Совет: ${c.adv}</p>`;
+      setTimeout(()=>reading.appendChild(div), 450);
+      if(opened===items.length){ document.getElementById('sp-hint').style.display='none'; if(onAllOpen) setTimeout(onAllOpen, 500); }
+    });
+  });
+  go('spread');
+}
+
+/* ================= РАСКЛАДЫ ================= */
+function openDaily(){
+  // Одна и та же карта весь день для одного человека
+  const h = hash(userKey()+'|'+today());
+  const item = { c: DECK[h % DECK.length], rev: (h>>>8) % 10 < 3 };
+  showSpread({ title:'Карта дня', sub:new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long'}), items:[item], big:true });
+}
+function openThree(){
+  showSpread({ title:'Три карты', sub:'Сосредоточьтесь на своей ситуации', items:drawRandom(3), positions:['Прошлое','Настоящее','Будущее'] });
+}
+function openYesNo(){
+  const items = drawRandom(1);
+  showSpread({ title:'Да или нет', sub:'Задайте вопрос мысленно и откройте карту', items, big:true,
+    onAllOpen(){
+      const it=items[0]; let a=it.c.yn;
+      if(it.rev) a = a==='Да' ? 'Не сейчас' : a==='Возможно' ? 'Скорее нет' : 'Нет';
+      const d=document.createElement('div'); d.className='answer'; d.textContent=a;
+      document.getElementById('sp-reading').prepend(d); haptic('heavy');
+    }});
+}
+const OPEN = { three: openThree, yesno: openYesNo };
+
+/* ================= ОПЛАТА ================= */
+let paying = false;
+async function buy(kind){
+  if (!inTelegram) { toast('Платные расклады открываются внутри Telegram'); return; }
+  if (paying) return;
+  paying = true; haptic('light');
+  try {
+    const r = await fetch('/api/invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, initData: tg.initData })
+    });
+    const j = await r.json();
+    if (!j.link) throw new Error(j.error || 'no link');
+    tg.openInvoice(j.link, status => {
+      paying = false;
+      if (status === 'paid') OPEN[kind]();
+      else if (status === 'failed') toast('Оплата не прошла, попробуйте ещё раз');
+    });
+  } catch (e) {
+    paying = false;
+    toast('Не удалось создать счёт, попробуйте чуть позже');
+  }
+}
+document.getElementById('p-three').textContent = PRICES.three;
+document.getElementById('p-yesno').textContent = PRICES.yesno;
+</script>
+</body>
+</html>
